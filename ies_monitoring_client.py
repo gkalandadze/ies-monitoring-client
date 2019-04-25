@@ -24,17 +24,10 @@ def string_to_datetime(date_time_str):
 # ფუნქცია ქმნის სოკეტს და უკავშირდება ies_monitoring_server-ს
 def connect_to_ies_monitoring_server():
     # შევქმნათ სოკეტი
-    try :
-
-        connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # დავუკავშირდეთ ies_monitoring_server-ს
-        connection.connect((server_ip, server_port))
-        return connection
-    except ConnectionError :
-         print("Connection refuse")
-
-
-
+    connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # დავუკავშირდეთ ies_monitoring_server-ს
+    connection.connect((server_ip, server_port))
+    return connection
 
 def connection_close(connection):
     connection.shutdown(socket.SHUT_RDWR)
@@ -77,14 +70,14 @@ def wait_for_server_response(connection, message_id, resend_try_number, resend_d
 
 # ფუნქციის საშუალებით ies_monitoring_server-ს შეგვიძლია გავუგზავნოთ შეტყობინება
 def send_message_task(message_id, message_type, text, resend_try_number, resend_delay, sent_message_count, using_threading):
-   # print("send_message_task|" ,sent_message_count, "|")
-   # print("send_message_task=", type(sent_message_count))
+    #print("send_message_task|" ,sent_message_count, "|")
+    #print("send_message_task=", type(sent_message_count))
     # დავუკავშირდეთ სერვერს
-    try:
+    try :
         connection = connect_to_ies_monitoring_server()
-    except :
-        print("12")
-        
+    except ConnectionError:
+        print("\nConnection refuse")
+        sys.exit()
 
     if not message_id:
         # შეტყობინების უნიკალური id
@@ -118,9 +111,9 @@ def send_message_using_threading(message_id, message_type, text, resend_try_numb
     send_message_thread.start()
 
 def send_message(message_type, text, resend_try_number = 3, resend_delay = 3,  sent_message_count=1, using_threading=True, message_id = False):
-   # print("send_message|" ,sent_message_count, "|"," =")
+    #print("send_message|" ,sent_message_count, "|"," =")
     sent_message_count = int(sent_message_count)
-  #  print("send_message=",type(sent_message_count))
+    #print("send_message=",type(sent_message_count))
     if using_threading:
         send_message_using_threading(message_id, message_type, text, resend_try_number, resend_delay, sent_message_count)
     else:
@@ -139,10 +132,5 @@ def start_wait_for_server_response_thread(connection, message_id, resend_try_num
     wait_for_server_response_thread.start()
 
 if __name__ == "__main__":
-
     send_message("blockkk", "ბ", using_threading=False)
     send_message("aaaa", "სერვერი დაიწვა", using_threading=False)
-   
-  
-    
-   
