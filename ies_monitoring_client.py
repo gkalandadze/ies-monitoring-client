@@ -9,7 +9,7 @@ import datetime
 import uuid
 
 # ies_monitoring_server ის ip-ი მისამართი
-server_ip = "10.0.0.16"
+server_ip = "10.0.0.20"
 # ies_monitoring_server ის port-ი
 server_port = 12345
 # sent_messages list-ში ვინახავთ თითოეული გაგზავნილი მესიჯის დროს
@@ -34,7 +34,7 @@ def connect_to_ies_monitoring_server():
 
     # დავუკავშირდეთ ies_monitoring_server-ს
     connection.connect((server_ip, server_port))
-    
+
     # დავაბრუნოთ connection ობიექტი
     return connection
 
@@ -139,7 +139,7 @@ def wait_for_server_response(connection, message_id, resend_try_number, resend_d
 
 def send_message_task(message_id, message_type, text, resend_try_number,
                       resend_delay, sent_message_count, using_threading):
-    """ ფუნქციას იყენებს send_message ფუნქცია და მისი საშუალებით 
+    """ ფუნქციას იყენებს send_message ფუნქცია და მისი საშუალებით
         ies_monitoring_server-ს შეგვიძლია გავუგზავნოთ შეტყობინება """
 
     # დავუკავშირდეთ სერვერს
@@ -159,7 +159,9 @@ def send_message_task(message_id, message_type, text, resend_try_number,
         "message_type": message_type,
         "text": text,
         "sent_message_datetime": sent_message_datetime,
-        "sent_message_count": sent_message_count
+        "sent_message_count": sent_message_count,
+        "client_ip": connection.getsockname()[0],
+        "client_script_name": sys.argv[0].strip("./")
     }
 
     # sent_messages dictionary -ში ჩავამატოთ მიმდინარე მესიჯის უნიკალური Id-ი და დრო
@@ -190,7 +192,6 @@ def send_message_using_threading(message_id, message_type, text, resend_try_numb
     send_message_thread.start()
 
 
-
 def send_message(message_type, text, resend_try_number=3, resend_delay=3,
                  sent_message_count=1, using_threading=True, message_id=False):
     """
@@ -200,7 +201,7 @@ def send_message(message_type, text, resend_try_number=3, resend_delay=3,
     text - შეტყობინების ტექსტი
     resend_try_number - იმ შემთხვევაში თუ სერვერმა ვერ მიიღო შეტყობინება რამდენჯერ ცადოს ხელახლა გაგზავნა
     resend_delay - იმ შემთხვევაში თუ სერვერმა ვერ მიიღო შეტყობინება რამდენი წუთის მერე ცადოს ხელახლა გაგზავნა
-    using_threading - ფუნქცია გაეშვას ცალკე Thread-ით თუ არა. თუ გვინდა რომ ფუნქცია გაეშვას thread-ის გარეშე 
+    using_threading - ფუნქცია გაეშვას ცალკე Thread-ით თუ არა. თუ გვინდა რომ ფუნქცია გაეშვას thread-ის გარეშე
                       მივუთითოთ using_threading=False. using_threading პარამეტრის default მნიშვნელობა არის True
     """
 
@@ -242,6 +243,12 @@ def start_wait_for_server_response_thread(connection, message_id, resend_try_num
     # გავუშვათ wait_for_server_response_thread-ი
     wait_for_server_response_thread.start()
 
+
 if __name__ == "__main__":
-    send_message("blockkk", "ბ", using_threading=False)
-    send_message("aaaa", "სერვერი დაიწვა", using_threading=False)
+    # send_message("blockkk", "ბ", using_threading=True)
+    # send_message("aaaa", "სერვერი დაიწვა", using_threading=True)
+    i = 1
+    while i <= 2:
+        time.sleep(0.01)
+        send_message("aaaa", "სერვერი დაიწვა", using_threading=True)
+        i += 1
