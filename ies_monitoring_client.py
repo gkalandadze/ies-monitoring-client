@@ -7,16 +7,34 @@ import threading
 import time
 import datetime
 import uuid
+import logging
 
 # ies_monitoring_server ის ip-ი მისამართი
 server_ip = "10.0.0.20"
+
 # ies_monitoring_server ის port-ი
 server_port = 12345
-# sent_messages list-ში ვინახავთ თითოეული გაგზავნილი მესიჯის დროს
+
+# sent_messages list-ში ვინახავთ თითოეული გაგზავნილი შეტყობინების დროს
 # დაგენერირებულ uuid-ს და მიმდინარე დროს
 sent_messages = {}
-# მესიჯის buffer_size
+
+# შეტყობინების buffer_size
 buffer_size = 8192
+
+# log ფაილის დასახელება
+log_filename = "imc_log"
+
+# logger შექმნა
+logger = logging.getLogger('ies_monitoring_client_logger')
+logger.setLevel(logging.DEBUG)
+
+# FileHandler - ის შექმნა. დონის და ფორმატის განსაზღვრა
+log_file_handler = logging.FileHandler(log_filename)
+log_file_handler.setLevel(logging.DEBUG)
+log_file_formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s \n")
+log_file_handler.setFormatter(log_file_formatter)
+logger.addHandler(log_file_handler)
 
 
 def string_to_datetime(date_time_str):
@@ -32,11 +50,13 @@ def connect_to_ies_monitoring_server():
     # შევქმნათ სოკეტი
     connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    # დავუკავშირდეთ ies_monitoring_server-ს
-    connection.connect((server_ip, server_port))
-
-    # დავაბრუნოთ connection ობიექტი
-    return connection
+    # დავუკავშირდეთ ies_monitoring_server-ს და დავაბრუნოთ connection ობიექტი
+    try:
+        connection.connect((server_ip, server_port))
+        logger.debug("დავუკავშირდით სერვერს: " + str(connection))
+        return connection
+    except Exception as ex:
+        logger.error("ვერ ვუკავშირდებით სერვერს\n" + str(ex))
 
 
 def connection_close(connection):
@@ -150,7 +170,7 @@ def send_message_task(message_id, message_type, text, resend_try_number,
         # თუ message_id არის ცარიელი დავაგენერიროთ ახალი Id
         message_id = str(uuid.uuid4())
 
-    # მესიჯის გაგზავნის დრო
+    # შეტყობინების გაგზავნის დრო
     sent_message_datetime = str(datetime.datetime.now())
 
     # შევქმნათ message_data dictionary რასაც ვუგზავნით სერვერს
@@ -164,7 +184,7 @@ def send_message_task(message_id, message_type, text, resend_try_number,
         "client_script_name": sys.argv[0].strip("./")
     }
 
-    # sent_messages dictionary -ში ჩავამატოთ მიმდინარე მესიჯის უნიკალური Id-ი და დრო
+    # sent_messages dictionary -ში ჩავამატოთ მიმდინარე შეტყობინების უნიკალური Id-ი და დრო
     sent_messages[message_id] = message_data
 
     # გავაგზავნოთ შეტყობინება
@@ -197,7 +217,7 @@ def send_message(message_type, text, resend_try_number=3, resend_delay=3,
     """
     უნქციის საშუალებით შეგვიძლია ies_monitoring_server-ს გავუგზავნოთ შეტყობინება
     პარამეტრები:
-    message_type - მესიჯის ტიპი
+    message_type - შეტყობინების ტიპი
     text - შეტყობინების ტექსტი
     resend_try_number - იმ შემთხვევაში თუ სერვერმა ვერ მიიღო შეტყობინება რამდენჯერ ცადოს ხელახლა გაგზავნა
     resend_delay - იმ შემთხვევაში თუ სერვერმა ვერ მიიღო შეტყობინება რამდენი წუთის მერე ცადოს ხელახლა გაგზავნა
@@ -217,7 +237,7 @@ def send_message(message_type, text, resend_try_number=3, resend_delay=3,
 
 
 def resend_message(message_data, resend_try_number, resend_delay, sent_message_count, using_threading):
-    """ ფუნქციას ვიყენბთ იმ შემთხვევაში როდესაც სერვერიდან პასუხი არ მოდის და ვაგზავნით თავიდან """
+    """ ფუნქციას ვიყენებთ იმ შემთხვევაში როდესაც სერვერიდან პასუხი არ მოდის და ვაგზავნით თავიდან """
 
     # წავიკითხოთ message_id-ი message_data dictionary-დან
     message_id = message_data["message_id"]
